@@ -1,5 +1,7 @@
 package com.securevault.controller;
 
+import java.util.List;
+
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -9,9 +11,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.securevault.entity.Credential;
+import com.securevault.dto.CredentialRequest;
+import com.securevault.dto.CredentialResponse;
 import com.securevault.service.CredentialService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -22,30 +26,35 @@ public class CredentialController {
     private final CredentialService credentialService;
 
     @PostMapping
-    public Credential saveCredential(@RequestBody Credential credential) {
+    public CredentialResponse saveCredential(@Valid @RequestBody CredentialRequest credentialRequest) {
 
-        return credentialService.saveCredential(credential);
-
+        return credentialService.saveCredential(credentialRequest);
     }
+
     @GetMapping("/{id}")
-public Credential getCredentialById(@PathVariable Long id) {
+    public CredentialResponse getCredentialById(@PathVariable Long id) {
 
-    return credentialService.getCredentialById(id);
-}
-@PutMapping("/{id}")
-public Credential updateCredential(@PathVariable Long id,
-                                   @RequestBody Credential updatedCredential) {
+        return credentialService.getCredentialById(id);
+    }
+    @GetMapping
+public List<CredentialResponse> getAllCredentials() {
 
-    return credentialService.updateCredential(id, updatedCredential);
-
-}
-@DeleteMapping("/{id}")
-public String deleteCredential(@PathVariable Long id) {
-
-    credentialService.deleteCredential(id);
-
-    return "Credential deleted successfully.";
-
+    return credentialService.getAllCredentials();
 }
 
+    @PutMapping("/{id}")
+    public CredentialResponse updateCredential(
+            @PathVariable Long id,
+            @Valid @RequestBody CredentialRequest credentialRequest) {
+
+        return credentialService.updateCredential(id, credentialRequest);
+    }
+
+    @DeleteMapping("/{id}")
+    public String deleteCredential(@PathVariable Long id) {
+
+        credentialService.deleteCredential(id);
+
+        return "Credential deleted successfully.";
+    }
 }

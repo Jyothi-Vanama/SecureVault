@@ -1,15 +1,18 @@
 package com.securevault.service;
 
-import com.securevault.entity.Credential;
+import java.util.List;
+
+import com.securevault.dto.CredentialRequest;
+import com.securevault.dto.CredentialResponse;
 
 public interface CredentialService {
 
-    Credential saveCredential(Credential credential);
+    CredentialResponse saveCredential(CredentialRequest credentialRequest);
 
-    Credential getCredentialById(Long id);
+    CredentialResponse getCredentialById(Long id);
+    List<CredentialResponse> getAllCredentials();
 
-    Credential updateCredential(Long id, Credential updatedCredential);
+    CredentialResponse updateCredential(Long id, CredentialRequest credentialRequest);
 
     void deleteCredential(Long id);
-
 }

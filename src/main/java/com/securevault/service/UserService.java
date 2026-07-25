@@ -9,4 +9,6 @@ public interface UserService {
     User registerUser(User user);
     LoginResponse loginUser(LoginRequest loginRequest);
 
+    User findByEmail(String email);
+
 }
