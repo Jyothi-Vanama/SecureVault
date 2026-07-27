@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import com.securevault.dto.CredentialRequest;
 import com.securevault.dto.CredentialResponse;
+import com.securevault.entity.Category;
 import com.securevault.entity.Credential;
 import com.securevault.entity.User;
 import com.securevault.repository.CredentialRepository;
@@ -35,6 +36,7 @@ public class CredentialServiceImpl implements CredentialService {
         credential.setUsername(credentialRequest.getUsername());
         credential.setEncryptedPassword(AESUtil.encrypt(credentialRequest.getPassword()));
         credential.setNotes(credentialRequest.getNotes());
+        credential.setCategory(credentialRequest.getCategory());
         credential.setUser(user);
 
         Credential savedCredential = credentialRepository.save(credential);
@@ -46,6 +48,7 @@ public class CredentialServiceImpl implements CredentialService {
         response.setUsername(savedCredential.getUsername());
         response.setEncryptedPassword(savedCredential.getEncryptedPassword());
         response.setNotes(savedCredential.getNotes());
+        response.setCategory(savedCredential.getCategory());
 
         return response;
     }
@@ -64,7 +67,7 @@ public class CredentialServiceImpl implements CredentialService {
         response.setEncryptedPassword(
                 AESUtil.decrypt(credential.getEncryptedPassword()));
         response.setNotes(credential.getNotes());
-
+        response.setCategory(credential.getCategory());
         return response;
     }
 
@@ -89,6 +92,65 @@ public List<CredentialResponse> getAllCredentials() {
         response.setEncryptedPassword(
                 AESUtil.decrypt(credential.getEncryptedPassword()));
         response.setNotes(credential.getNotes());
+        response.setCategory(credential.getCategory());
+        responses.add(response);
+    }
+
+    return responses;
+}
+
+@Override
+public List<CredentialResponse> searchCredentials(String keyword) {
+
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    User user = (User) authentication.getPrincipal();
+
+    List<Credential> credentials = credentialRepository.searchCredentials(user, keyword);
+
+    List<CredentialResponse> responses = new ArrayList<>();
+
+    for (Credential credential : credentials) {
+
+        CredentialResponse response = new CredentialResponse();
+
+        response.setCredentialId(credential.getCredentialId());
+        response.setTitle(credential.getTitle());
+        response.setWebsite(credential.getWebsite());
+        response.setUsername(credential.getUsername());
+        response.setEncryptedPassword(
+                AESUtil.decrypt(credential.getEncryptedPassword()));
+        response.setNotes(credential.getNotes());
+        response.setCategory(credential.getCategory());
+
+        responses.add(response);
+    }
+
+    return responses;
+}
+
+@Override
+public List<CredentialResponse> getCredentialsByCategory(Category category) {
+
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    User user = (User) authentication.getPrincipal();
+
+    List<Credential> credentials =
+            credentialRepository.findByUserAndCategory(user, category);
+
+    List<CredentialResponse> responses = new ArrayList<>();
+
+    for (Credential credential : credentials) {
+
+        CredentialResponse response = new CredentialResponse();
+
+        response.setCredentialId(credential.getCredentialId());
+        response.setTitle(credential.getTitle());
+        response.setWebsite(credential.getWebsite());
+        response.setUsername(credential.getUsername());
+        response.setEncryptedPassword(
+                AESUtil.decrypt(credential.getEncryptedPassword()));
+        response.setNotes(credential.getNotes());
+        response.setCategory(credential.getCategory());
 
         responses.add(response);
     }
@@ -118,6 +180,7 @@ if (!existingPassword.equals(credentialRequest.getPassword())) {
             AESUtil.encrypt(credentialRequest.getPassword()));
 }
         credential.setNotes(credentialRequest.getNotes());
+credential.setCategory(credentialRequest.getCategory());
 
         Credential updatedCredential = credentialRepository.save(credential);
 
@@ -128,6 +191,7 @@ if (!existingPassword.equals(credentialRequest.getPassword())) {
         response.setUsername(updatedCredential.getUsername());
         response.setEncryptedPassword(updatedCredential.getEncryptedPassword());
         response.setNotes(updatedCredential.getNotes());
+        response.setCategory(updatedCredential.getCategory());
 
         return response;
     }

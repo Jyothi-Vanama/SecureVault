@@ -1,5 +1,7 @@
 package com.securevault.dto;
 
+import com.securevault.entity.Category;
+
 import lombok.Getter;
 import lombok.Setter;
 
@@ -13,4 +15,5 @@ public class CredentialResponse {
     private String encryptedPassword;
     private String title;
     private String notes;
+    private Category category;
 }

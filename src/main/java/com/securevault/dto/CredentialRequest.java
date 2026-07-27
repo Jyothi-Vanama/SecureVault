@@ -1,5 +1,7 @@
 package com.securevault.dto;
 
+import com.securevault.entity.Category;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -23,5 +25,6 @@ private String title;
     private String password;
 
     private String notes;
+    private Category category;
 
 }
