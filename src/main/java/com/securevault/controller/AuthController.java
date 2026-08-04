@@ -5,11 +5,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.securevault.dto.ApiResponse;
 import com.securevault.dto.LoginRequest;
 import com.securevault.dto.LoginResponse;
-import com.securevault.entity.User;
+import com.securevault.dto.RegisterRequest;
+import com.securevault.dto.RegisterResponse;
 import com.securevault.service.UserService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -19,17 +22,29 @@ public class AuthController {
 
     private final UserService userService;
 
-    @PostMapping("/register")
-    public User registerUser(@RequestBody User user) {
+@PostMapping("/register")
+public ApiResponse<RegisterResponse> registerUser(
+        @Valid @RequestBody RegisterRequest registerRequest) {
 
-        return userService.registerUser(user);
+    RegisterResponse response = userService.registerUser(registerRequest);
 
-    }
-    @PostMapping("/login")
-public LoginResponse loginUser(@RequestBody LoginRequest loginRequest) {
+    return new ApiResponse<>(
+            true,
+            "User registered successfully",
+            response
+    );
+}
+@PostMapping("/login")
+public ApiResponse<LoginResponse> loginUser(
+        @Valid @RequestBody LoginRequest loginRequest) {
 
-    return userService.loginUser(loginRequest);
+    LoginResponse response = userService.loginUser(loginRequest);
 
+    return new ApiResponse<>(
+            true,
+            "Login successful",
+            response
+    );
 }
 
 }

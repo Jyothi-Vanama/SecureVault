@@ -8,17 +8,23 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.securevault.dto.ApiResponse;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(RuntimeException.class)
-    public Map<String, String> handleRuntimeException(RuntimeException ex) {
+    @ExceptionHandler(ResourceNotFoundException.class)
+public ApiResponse<Object> handleResourceNotFoundException(
+        ResourceNotFoundException ex) {
 
-        return Map.of("message", ex.getMessage());
-
-    }
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-public Map<String, String> handleValidationException(
+    return new ApiResponse<>(
+        false,
+        ex.getMessage(),
+        null
+);
+}
+@ExceptionHandler(MethodArgumentNotValidException.class)
+public ApiResponse<Map<String, String>> handleValidationException(
         MethodArgumentNotValidException ex) {
 
     Map<String, String> errors = new HashMap<>();
@@ -27,7 +33,44 @@ public Map<String, String> handleValidationException(
         errors.put(error.getField(), error.getDefaultMessage());
     }
 
-    return errors;
+    return new ApiResponse<>(
+            false,
+            "Validation failed",
+            errors
+    );
+}
+
+@ExceptionHandler(DuplicateEmailException.class)
+public ApiResponse<Object> handleDuplicateEmailException(
+        DuplicateEmailException ex) {
+
+    return new ApiResponse<>(
+        false,
+        ex.getMessage(),
+        null
+);
+}
+
+@ExceptionHandler(UserNotFoundException.class)
+public ApiResponse<Object> handleUserNotFoundException(
+        UserNotFoundException ex) {
+
+    return new ApiResponse<>(
+        false,
+        ex.getMessage(),
+        null
+);
+}
+
+@ExceptionHandler(InvalidCredentialsException.class)
+public ApiResponse<Object> handleInvalidCredentialsException(
+        InvalidCredentialsException ex) {
+
+    return new ApiResponse<>(
+        false,
+        ex.getMessage(),
+        null
+);
 }
 
 }

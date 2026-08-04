@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.securevault.dto.ApiResponse;
 import com.securevault.dto.CredentialRequest;
 import com.securevault.dto.CredentialResponse;
 import com.securevault.entity.Category;
@@ -27,46 +28,88 @@ public class CredentialController {
 
     private final CredentialService credentialService;
 
-    @PostMapping
-    public CredentialResponse saveCredential(@Valid @RequestBody CredentialRequest credentialRequest) {
+   @PostMapping
+public ApiResponse<CredentialResponse> saveCredential(
+        @Valid @RequestBody CredentialRequest credentialRequest) {
 
-        return credentialService.saveCredential(credentialRequest);
-    }
+    CredentialResponse response =
+            credentialService.saveCredential(credentialRequest);
+
+    return new ApiResponse<>(
+            true,
+            "Credential created successfully",
+            response
+    );
+}
 
     @GetMapping("/{id}")
-    public CredentialResponse getCredentialById(@PathVariable Long id) {
+public ApiResponse<CredentialResponse> getCredentialById(
+        @PathVariable Long id) {
 
-        return credentialService.getCredentialById(id);
-    }
- @GetMapping
-public List<CredentialResponse> getAllCredentials(
+    CredentialResponse response =
+            credentialService.getCredentialById(id);
+
+    return new ApiResponse<>(
+            true,
+            "Credential fetched successfully",
+            response
+    );
+}
+@GetMapping
+public ApiResponse<List<CredentialResponse>> getAllCredentials(
         @RequestParam(required = false) Category category) {
 
+    List<CredentialResponse> response;
+
     if (category != null) {
-        return credentialService.getCredentialsByCategory(category);
+        response = credentialService.getCredentialsByCategory(category);
+    } else {
+        response = credentialService.getAllCredentials();
     }
 
-    return credentialService.getAllCredentials();
+    return new ApiResponse<>(
+            true,
+            "Credentials fetched successfully",
+            response
+    );
 }
 
     @PutMapping("/{id}")
-    public CredentialResponse updateCredential(
-            @PathVariable Long id,
-            @Valid @RequestBody CredentialRequest credentialRequest) {
+public ApiResponse<CredentialResponse> updateCredential(
+        @PathVariable Long id,
+        @Valid @RequestBody CredentialRequest credentialRequest) {
 
-        return credentialService.updateCredential(id, credentialRequest);
-    }
+    CredentialResponse response =
+            credentialService.updateCredential(id, credentialRequest);
+
+    return new ApiResponse<>(
+            true,
+            "Credential updated successfully",
+            response
+    );
+}
 @GetMapping("/search")
-public List<CredentialResponse> searchCredentials(
+public ApiResponse<List<CredentialResponse>> searchCredentials(
         @RequestParam String keyword) {
 
-    return credentialService.searchCredentials(keyword);
+    List<CredentialResponse> response =
+            credentialService.searchCredentials(keyword);
+
+    return new ApiResponse<>(
+            true,
+            "Search completed successfully",
+            response
+    );
 }
     @DeleteMapping("/{id}")
-    public String deleteCredential(@PathVariable Long id) {
+public ApiResponse<String> deleteCredential(@PathVariable Long id) {
 
-        credentialService.deleteCredential(id);
+    credentialService.deleteCredential(id);
 
-        return "Credential deleted successfully.";
-    }
+    return new ApiResponse<>(
+            true,
+            "Credential deleted successfully",
+            null
+    );
+}
 }

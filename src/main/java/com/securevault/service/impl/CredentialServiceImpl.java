@@ -12,6 +12,7 @@ import com.securevault.dto.CredentialResponse;
 import com.securevault.entity.Category;
 import com.securevault.entity.Credential;
 import com.securevault.entity.User;
+import com.securevault.exception.ResourceNotFoundException;
 import com.securevault.repository.CredentialRepository;
 import com.securevault.security.AESUtil;
 import com.securevault.service.CredentialService;
@@ -57,7 +58,7 @@ public class CredentialServiceImpl implements CredentialService {
     public CredentialResponse getCredentialById(Long id) {
 
         Credential credential = credentialRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Credential not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Credential not found"));
 
         CredentialResponse response = new CredentialResponse();
         response.setCredentialId(credential.getCredentialId());
@@ -162,12 +163,12 @@ public List<CredentialResponse> getCredentialsByCategory(Category category) {
     public CredentialResponse updateCredential(Long id, CredentialRequest credentialRequest) {
 
         Credential credential = credentialRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Credential not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Credential not found"));
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 User user = (User) authentication.getPrincipal();
 
 if (!credential.getUser().getUserId().equals(user.getUserId())) {
-    throw new RuntimeException("You are not authorized to update this credential");
+    throw new RuntimeException("You are not authorized to delete this credential");
 }
 
         credential.setTitle(credentialRequest.getTitle());
@@ -200,7 +201,7 @@ credential.setCategory(credentialRequest.getCategory());
     public void deleteCredential(Long id) {
 
         Credential credential = credentialRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Credential not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Credential not found"));
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 User user = (User) authentication.getPrincipal();

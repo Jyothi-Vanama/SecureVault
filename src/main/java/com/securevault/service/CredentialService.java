@@ -11,10 +11,14 @@ public interface CredentialService {
     CredentialResponse saveCredential(CredentialRequest credentialRequest);
 
     CredentialResponse getCredentialById(Long id);
+
     List<CredentialResponse> getAllCredentials();
-List<CredentialResponse> searchCredentials(String keyword);
-    CredentialResponse updateCredential(Long id, CredentialRequest credentialRequest);
+
+    List<CredentialResponse> searchCredentials(String keyword);
+
     List<CredentialResponse> getCredentialsByCategory(Category category);
+
+    CredentialResponse updateCredential(Long id, CredentialRequest credentialRequest);
 
     void deleteCredential(Long id);
 }
