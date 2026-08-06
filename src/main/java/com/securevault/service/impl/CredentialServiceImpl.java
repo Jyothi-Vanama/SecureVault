@@ -16,16 +16,25 @@ import com.securevault.exception.ResourceNotFoundException;
 import com.securevault.repository.CredentialRepository;
 import com.securevault.security.AESUtil;
 import com.securevault.service.CredentialService;
-
+import com.securevault.service.AuditLogService;
 import lombok.RequiredArgsConstructor;
+import java.time.LocalDateTime;
+
+import org.springframework.transaction.annotation.Transactional;
+
+import com.securevault.entity.AuditLog;
+import com.securevault.repository.AuditLogRepository;
 
 @Service
 @RequiredArgsConstructor
 public class CredentialServiceImpl implements CredentialService {
 
     private final CredentialRepository credentialRepository;
+    private final AuditLogService auditLogService;
+    private final AuditLogRepository auditLogRepository;
 
     @Override
+    @Transactional
     public CredentialResponse saveCredential(CredentialRequest credentialRequest) {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -41,6 +50,12 @@ public class CredentialServiceImpl implements CredentialService {
         credential.setUser(user);
 
         Credential savedCredential = credentialRepository.save(credential);
+auditLogService.saveAuditLog(
+        "CREATE",
+        "Credential",
+        savedCredential.getCredentialId(),
+        user
+);
 
         CredentialResponse response = new CredentialResponse();
         response.setCredentialId(savedCredential.getCredentialId());

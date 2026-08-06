@@ -1,0 +1,37 @@
+package com.securevault.entity;
+
+import java.time.LocalDateTime;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import jakarta.persistence.Column;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@Entity
+@Table(name = "audit_logs")
+public class AuditLog {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false)
+private String action;
+
+    private String entityType;
+
+    private Long entityId;
+
+    private String performedBy;
+
+    private LocalDateTime timestamp;
+
+}
