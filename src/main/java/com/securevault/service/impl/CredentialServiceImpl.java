@@ -18,12 +18,12 @@ import com.securevault.security.AESUtil;
 import com.securevault.service.CredentialService;
 import com.securevault.service.AuditLogService;
 import lombok.RequiredArgsConstructor;
-import java.time.LocalDateTime;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import com.securevault.specification.CredentialSpecification;
 
 import org.springframework.transaction.annotation.Transactional;
-
-import com.securevault.entity.AuditLog;
-import com.securevault.repository.AuditLogRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -31,8 +31,7 @@ public class CredentialServiceImpl implements CredentialService {
 
     private final CredentialRepository credentialRepository;
     private final AuditLogService auditLogService;
-    private final AuditLogRepository auditLogRepository;
-
+    
     @Override
     @Transactional
     public CredentialResponse saveCredential(CredentialRequest credentialRequest) {
@@ -87,34 +86,6 @@ auditLogService.saveAuditLog(
         return response;
     }
 
-    @Override
-public List<CredentialResponse> getAllCredentials() {
-
-    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    User user = (User) authentication.getPrincipal();
-
-    List<Credential> credentials = credentialRepository.findByUser(user);
-
-    List<CredentialResponse> responses = new ArrayList<>();
-
-    for (Credential credential : credentials) {
-
-        CredentialResponse response = new CredentialResponse();
-
-        response.setCredentialId(credential.getCredentialId());
-        response.setTitle(credential.getTitle());
-        response.setWebsite(credential.getWebsite());
-        response.setUsername(credential.getUsername());
-        response.setEncryptedPassword(
-                AESUtil.decrypt(credential.getEncryptedPassword()));
-        response.setNotes(credential.getNotes());
-        response.setCategory(credential.getCategory());
-        responses.add(response);
-    }
-
-    return responses;
-}
-
 @Override
 public List<CredentialResponse> searchCredentials(String keyword) {
 
@@ -145,17 +116,46 @@ public List<CredentialResponse> searchCredentials(String keyword) {
 }
 
 @Override
-public List<CredentialResponse> getCredentialsByCategory(Category category) {
+public Page<CredentialResponse> getFilteredCredentials(
+        Category category,
+        String title,
+        String username,
+        String website,
+        Pageable pageable) {
 
-    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    Authentication authentication =
+            SecurityContextHolder.getContext().getAuthentication();
+
     User user = (User) authentication.getPrincipal();
 
-    List<Credential> credentials =
-            credentialRepository.findByUserAndCategory(user, category);
+    Specification<Credential> specification =
+            (root, query, criteriaBuilder) ->
+                    criteriaBuilder.equal(root.get("user"), user);
 
-    List<CredentialResponse> responses = new ArrayList<>();
+    if (category != null) {
+        specification = specification.and(
+                CredentialSpecification.hasCategory(category));
+    }
 
-    for (Credential credential : credentials) {
+    if (title != null && !title.isBlank()) {
+        specification = specification.and(
+                CredentialSpecification.hasTitle(title));
+    }
+
+    if (username != null && !username.isBlank()) {
+        specification = specification.and(
+                CredentialSpecification.hasUsername(username));
+    }
+
+    if (website != null && !website.isBlank()) {
+        specification = specification.and(
+                CredentialSpecification.hasWebsite(website));
+    }
+
+    Page<Credential> credentials =
+            credentialRepository.findAll(specification, pageable);
+
+    return credentials.map(credential -> {
 
         CredentialResponse response = new CredentialResponse();
 
@@ -168,13 +168,12 @@ public List<CredentialResponse> getCredentialsByCategory(Category category) {
         response.setNotes(credential.getNotes());
         response.setCategory(credential.getCategory());
 
-        responses.add(response);
-    }
-
-    return responses;
+        return response;
+    });
 }
 
     @Override
+    @Transactional
     public CredentialResponse updateCredential(Long id, CredentialRequest credentialRequest) {
 
         Credential credential = credentialRepository.findById(id)
@@ -200,6 +199,13 @@ credential.setCategory(credentialRequest.getCategory());
 
         Credential updatedCredential = credentialRepository.save(credential);
 
+        auditLogService.saveAuditLog(
+        "UPDATE",
+        "Credential",
+        updatedCredential.getCredentialId(),
+        user
+);
+
         CredentialResponse response = new CredentialResponse();
         response.setCredentialId(updatedCredential.getCredentialId());
         response.setTitle(updatedCredential.getTitle());
@@ -213,6 +219,7 @@ credential.setCategory(credentialRequest.getCategory());
     }
 
     @Override
+    @Transactional
     public void deleteCredential(Long id) {
 
         Credential credential = credentialRepository.findById(id)
@@ -226,5 +233,11 @@ if (!credential.getUser().getUserId().equals(user.getUserId())) {
 }
 
         credentialRepository.delete(credential);
+        auditLogService.saveAuditLog(
+        "DELETE",
+        "Credential",
+        credential.getCredentialId(),
+        user
+);
     }
 }

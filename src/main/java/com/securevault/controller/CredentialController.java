@@ -17,6 +17,12 @@ import com.securevault.dto.CredentialRequest;
 import com.securevault.dto.CredentialResponse;
 import com.securevault.entity.Category;
 import com.securevault.service.CredentialService;
+import com.securevault.service.AsyncTaskService;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,89 +33,130 @@ import lombok.RequiredArgsConstructor;
 public class CredentialController {
 
     private final CredentialService credentialService;
+private final AsyncTaskService asyncTaskService;
 
-   @PostMapping
-public ApiResponse<CredentialResponse> saveCredential(
-        @Valid @RequestBody CredentialRequest credentialRequest) {
+    @PostMapping
+    public ApiResponse<CredentialResponse> saveCredential(
+            @Valid @RequestBody CredentialRequest credentialRequest) {
 
-    CredentialResponse response =
-            credentialService.saveCredential(credentialRequest);
-
-    return new ApiResponse<>(
-            true,
-            "Credential created successfully",
-            response
-    );
-}
-
-    @GetMapping("/{id}")
-public ApiResponse<CredentialResponse> getCredentialById(
-        @PathVariable Long id) {
-
-    CredentialResponse response =
-            credentialService.getCredentialById(id);
-
-    return new ApiResponse<>(
-            true,
-            "Credential fetched successfully",
-            response
-    );
-}
-@GetMapping
-public ApiResponse<List<CredentialResponse>> getAllCredentials(
-        @RequestParam(required = false) Category category) {
-
-    List<CredentialResponse> response;
-
-    if (category != null) {
-        response = credentialService.getCredentialsByCategory(category);
-    } else {
-        response = credentialService.getAllCredentials();
+        CredentialResponse response =
+                credentialService.saveCredential(credentialRequest);
+        System.out.println(
+        "Request thread: " + Thread.currentThread().getName()
+);
+                asyncTaskService.sendEmailNotification();
+        asyncTaskService.logActivity(
+        response.getCredentialId(),
+        "CREATE"
+);
+        return new ApiResponse<>(
+                true,
+                "Credential created successfully",
+                response
+        );
     }
 
-    return new ApiResponse<>(
-            true,
-            "Credentials fetched successfully",
-            response
-    );
-}
+    @GetMapping("/{id}")
+    public ApiResponse<CredentialResponse> getCredentialById(
+            @PathVariable Long id) {
+
+        CredentialResponse response =
+                credentialService.getCredentialById(id);
+
+        return new ApiResponse<>(
+                true,
+                "Credential fetched successfully",
+                response
+        );
+    }
+
+    @GetMapping
+    public ApiResponse<Page<CredentialResponse>> getAllCredentials(
+            @RequestParam(required = false) Category category,
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) String username,
+            @RequestParam(required = false) String website,
+            @RequestParam(defaultValue = "title") String sortBy,
+            @RequestParam(defaultValue = "asc") String direction,
+            Pageable pageable) {
+
+        // Allow only valid Credential fields for sorting
+        List<String> allowedSortFields = List.of(
+                "title",
+                "username",
+                "website",
+                "category",
+                "createdAt",
+                "updatedAt"
+        );
+
+        if (!allowedSortFields.contains(sortBy)) {
+            sortBy = "title";
+        }
+
+        Sort.Direction sortDirection =
+                Sort.Direction.fromString(direction);
+
+        pageable = PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                Sort.by(sortDirection, sortBy)
+        );
+
+        Page<CredentialResponse> response =
+                credentialService.getFilteredCredentials(
+                        category,
+                        title,
+                        username,
+                        website,
+                        pageable
+                );
+
+        return new ApiResponse<>(
+                true,
+                "Credentials fetched successfully",
+                response
+        );
+    }
 
     @PutMapping("/{id}")
-public ApiResponse<CredentialResponse> updateCredential(
-        @PathVariable Long id,
-        @Valid @RequestBody CredentialRequest credentialRequest) {
+    public ApiResponse<CredentialResponse> updateCredential(
+            @PathVariable Long id,
+            @Valid @RequestBody CredentialRequest credentialRequest) {
 
-    CredentialResponse response =
-            credentialService.updateCredential(id, credentialRequest);
+        CredentialResponse response =
+                credentialService.updateCredential(id, credentialRequest);
 
-    return new ApiResponse<>(
-            true,
-            "Credential updated successfully",
-            response
-    );
-}
-@GetMapping("/search")
-public ApiResponse<List<CredentialResponse>> searchCredentials(
-        @RequestParam String keyword) {
+        return new ApiResponse<>(
+                true,
+                "Credential updated successfully",
+                response
+        );
+    }
 
-    List<CredentialResponse> response =
-            credentialService.searchCredentials(keyword);
+    @GetMapping("/search")
+    public ApiResponse<List<CredentialResponse>> searchCredentials(
+            @RequestParam String keyword) {
 
-    return new ApiResponse<>(
-            true,
-            "Search completed successfully",
-            response
-    );
-}
+        List<CredentialResponse> response =
+                credentialService.searchCredentials(keyword);
+
+        return new ApiResponse<>(
+                true,
+                "Search completed successfully",
+                response
+        );
+    }
+
     @DeleteMapping("/{id}")
-public ApiResponse<String> deleteCredential(@PathVariable Long id) {
+    public ApiResponse<String> deleteCredential(@PathVariable Long id) {
 
-    credentialService.deleteCredential(id);
+        credentialService.deleteCredential(id);
 
-    return new ApiResponse<>(
-            true,
-            "Credential deleted successfully",
-            null
-    );
-}
+        return new ApiResponse<>(
+                true,
+                "Credential deleted successfully",
+                null
+        );
+    }
 }

@@ -2,6 +2,8 @@ package com.securevault.entity;
 
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.CreationTimestamp;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -32,6 +34,8 @@ private String action;
 
     private String performedBy;
 
-    private LocalDateTime timestamp;
+    @CreationTimestamp
+@Column(nullable = false, updatable = false)
+private LocalDateTime timestamp;
 
 }

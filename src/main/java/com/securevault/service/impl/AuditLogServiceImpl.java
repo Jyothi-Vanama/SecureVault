@@ -30,7 +30,6 @@ public class AuditLogServiceImpl implements AuditLogService {
         auditLog.setEntityType(entityType);
         auditLog.setEntityId(entityId);
         auditLog.setPerformedBy(user.getEmail());
-        auditLog.setTimestamp(LocalDateTime.now());
 
         auditLogRepository.save(auditLog);
         
