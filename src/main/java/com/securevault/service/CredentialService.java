@@ -31,4 +31,7 @@ public interface CredentialService {
             CredentialRequest credentialRequest);
 
     void deleteCredential(Long id);
+    void permanentlyDeleteCredential(Long id);
+    void restoreCredential(Long id);
+    List<CredentialResponse> getDeletedCredentials();
 }

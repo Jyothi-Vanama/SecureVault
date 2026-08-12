@@ -21,6 +21,9 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import java.util.List;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.OneToMany;
 
 @Getter
 @Setter
@@ -54,6 +57,12 @@ private Category category;
 
 
 private User user;
+@OneToMany(
+        mappedBy = "credential",
+        cascade = CascadeType.ALL,
+        orphanRemoval = true
+)
+private List<PasswordHistory> passwordHistories;
 
 @CreationTimestamp
 @Column(updatable = false)
@@ -61,5 +70,9 @@ private LocalDateTime createdAt;
 
 @UpdateTimestamp
 private LocalDateTime updatedAt;
+
+private boolean deleted = false;
+
+private LocalDateTime deletedAt;
 
 }

@@ -6,9 +6,12 @@ import java.util.Map;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.bind.annotation.ResponseStatus;
 
 import com.securevault.dto.ApiResponse;
+import org.springframework.http.HttpStatus;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -71,6 +74,17 @@ public ApiResponse<Object> handleInvalidCredentialsException(
         ex.getMessage(),
         null
 );
+}
+@ExceptionHandler(PasswordReuseException.class)
+@ResponseStatus(HttpStatus.CONFLICT)
+public ApiResponse<Object> handlePasswordReuseException(
+        PasswordReuseException ex) {
+
+    return new ApiResponse<>(
+            false,
+            ex.getMessage(),
+            null
+    );
 }
 
 }

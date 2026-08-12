@@ -1,5 +1,6 @@
 package com.securevault.service.impl;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,9 +12,12 @@ import com.securevault.dto.CredentialRequest;
 import com.securevault.dto.CredentialResponse;
 import com.securevault.entity.Category;
 import com.securevault.entity.Credential;
+import com.securevault.entity.PasswordHistory;
 import com.securevault.entity.User;
+import com.securevault.exception.PasswordReuseException;
 import com.securevault.exception.ResourceNotFoundException;
 import com.securevault.repository.CredentialRepository;
+import com.securevault.repository.PasswordHistoryRepository;
 import com.securevault.security.AESUtil;
 import com.securevault.service.CredentialService;
 import com.securevault.service.AuditLogService;
@@ -30,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class CredentialServiceImpl implements CredentialService {
 
     private final CredentialRepository credentialRepository;
+    private final PasswordHistoryRepository passwordHistoryRepository;
     private final AuditLogService auditLogService;
     
     @Override
@@ -71,8 +76,9 @@ auditLogService.saveAuditLog(
     @Override
     public CredentialResponse getCredentialById(Long id) {
 
-        Credential credential = credentialRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Credential not found"));
+        Credential credential = credentialRepository
+        .findByCredentialIdAndDeletedFalse(id)
+        .orElseThrow(() -> new ResourceNotFoundException("Credential not found"));
 
         CredentialResponse response = new CredentialResponse();
         response.setCredentialId(credential.getCredentialId());
@@ -129,8 +135,11 @@ public Page<CredentialResponse> getFilteredCredentials(
     User user = (User) authentication.getPrincipal();
 
     Specification<Credential> specification =
-            (root, query, criteriaBuilder) ->
-                    criteriaBuilder.equal(root.get("user"), user);
+        (root, query, criteriaBuilder) ->
+                criteriaBuilder.and(
+                        criteriaBuilder.equal(root.get("user"), user),
+                        criteriaBuilder.isFalse(root.get("deleted"))
+                );
 
     if (category != null) {
         specification = specification.and(
@@ -176,8 +185,9 @@ public Page<CredentialResponse> getFilteredCredentials(
     @Transactional
     public CredentialResponse updateCredential(Long id, CredentialRequest credentialRequest) {
 
-        Credential credential = credentialRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Credential not found"));
+Credential credential = credentialRepository
+        .findByCredentialIdAndDeletedFalse(id)
+        .orElseThrow(() -> new ResourceNotFoundException("Credential not found"));
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 User user = (User) authentication.getPrincipal();
 
@@ -189,8 +199,40 @@ if (!credential.getUser().getUserId().equals(user.getUserId())) {
         credential.setWebsite(credentialRequest.getWebsite());
         credential.setUsername(credentialRequest.getUsername());
         String existingPassword = AESUtil.decrypt(credential.getEncryptedPassword());
+        boolean passwordChanged =
+        !existingPassword.equals(credentialRequest.getPassword());
 
-if (!existingPassword.equals(credentialRequest.getPassword())) {
+if (passwordChanged) {
+        List<PasswordHistory> recentHistories =
+        passwordHistoryRepository
+                .findTop5ByCredentialCredentialIdOrderByVersionDesc(
+                        credential.getCredentialId());
+
+for (PasswordHistory oldHistory : recentHistories) {
+
+    String oldPassword =
+            AESUtil.decrypt(oldHistory.getEncryptedPassword());
+
+    if (oldPassword.equals(credentialRequest.getPassword())) {
+        throw new PasswordReuseException("Password was recently used");
+    }
+}
+
+    PasswordHistory history = new PasswordHistory();
+
+    history.setCredential(credential);
+    history.setEncryptedPassword(credential.getEncryptedPassword());
+    int nextVersion = passwordHistoryRepository
+        .findTopByCredentialCredentialIdOrderByVersionDesc(
+                credential.getCredentialId())
+        .map(latestHistory -> latestHistory.getVersion() + 1)
+        .orElse(1);
+
+history.setVersion(nextVersion);
+    history.setCreatedAt(LocalDateTime.now());
+
+    passwordHistoryRepository.save(history);
+
     credential.setEncryptedPassword(
             AESUtil.encrypt(credentialRequest.getPassword()));
 }
@@ -219,11 +261,55 @@ credential.setCategory(credentialRequest.getCategory());
     }
 
     @Override
+public List<CredentialResponse> getDeletedCredentials() {
+
+    Authentication authentication =
+            SecurityContextHolder.getContext().getAuthentication();
+
+    User user = (User) authentication.getPrincipal();
+
+    List<Credential> credentials =
+            credentialRepository.findByUserAndDeletedTrue(user);
+
+    return credentials.stream()
+            .map(credential -> {
+
+                CredentialResponse response = new CredentialResponse();
+
+                response.setCredentialId(credential.getCredentialId());
+                response.setTitle(credential.getTitle());
+                response.setWebsite(credential.getWebsite());
+                response.setUsername(credential.getUsername());
+                response.setEncryptedPassword(
+                        AESUtil.decrypt(credential.getEncryptedPassword()));
+                response.setNotes(credential.getNotes());
+                response.setCategory(credential.getCategory());
+
+                return response;
+            })
+            .toList();
+}
+
+    @Override
+@Transactional
+public void restoreCredential(Long id) {
+
+    Credential credential = credentialRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Credential not found"));
+
+    credential.setDeleted(false);
+    credential.setDeletedAt(null);
+
+    credentialRepository.save(credential);
+}
+
+    @Override
     @Transactional
     public void deleteCredential(Long id) {
 
-        Credential credential = credentialRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Credential not found"));
+Credential credential = credentialRepository
+        .findByCredentialIdAndDeletedFalse(id)
+        .orElseThrow(() -> new ResourceNotFoundException("Credential not found"));
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 User user = (User) authentication.getPrincipal();
@@ -232,7 +318,9 @@ if (!credential.getUser().getUserId().equals(user.getUserId())) {
     throw new RuntimeException("You are not authorized to delete this credential");
 }
 
-        credentialRepository.delete(credential);
+        credential.setDeleted(true);
+credential.setDeletedAt(LocalDateTime.now());
+credentialRepository.save(credential);
         auditLogService.saveAuditLog(
         "DELETE",
         "Credential",
@@ -240,4 +328,23 @@ if (!credential.getUser().getUserId().equals(user.getUserId())) {
         user
 );
     }
+
+    @Override
+@Transactional
+public void permanentlyDeleteCredential(Long id) {
+
+    Credential credential = credentialRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Credential not found"));
+
+    Authentication authentication =
+            SecurityContextHolder.getContext().getAuthentication();
+
+    User user = (User) authentication.getPrincipal();
+
+    if (!credential.getUser().getUserId().equals(user.getUserId())) {
+        throw new RuntimeException("You are not authorized to delete this credential");
+    }
+
+    credentialRepository.delete(credential);
+}
 }

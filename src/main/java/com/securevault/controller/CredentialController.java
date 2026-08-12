@@ -147,6 +147,29 @@ private final AsyncTaskService asyncTaskService;
                 response
         );
     }
+@PutMapping("/{id}/restore")
+public ApiResponse<String> restoreCredential(@PathVariable Long id) {
+
+    credentialService.restoreCredential(id);
+
+    return new ApiResponse<>(
+            true,
+            "Credential restored successfully",
+            null
+    );
+}
+@GetMapping("/trash")
+public ApiResponse<List<CredentialResponse>> getTrash() {
+
+    List<CredentialResponse> response =
+            credentialService.getDeletedCredentials();
+
+    return new ApiResponse<>(
+            true,
+            "Trash fetched successfully",
+            response
+    );
+}
 
     @DeleteMapping("/{id}")
     public ApiResponse<String> deleteCredential(@PathVariable Long id) {
@@ -159,4 +182,17 @@ private final AsyncTaskService asyncTaskService;
                 null
         );
     }
+
+    @DeleteMapping("/{id}/permanent")
+public ApiResponse<String> permanentlyDeleteCredential(
+        @PathVariable Long id) {
+
+    credentialService.permanentlyDeleteCredential(id);
+
+    return new ApiResponse<>(
+            true,
+            "Credential permanently deleted successfully",
+            null
+    );
+}
 }

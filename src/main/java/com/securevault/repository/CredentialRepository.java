@@ -1,6 +1,7 @@
 package com.securevault.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -25,7 +26,8 @@ public interface CredentialRepository
             SELECT c
             FROM Credential c
             WHERE c.user = :user
-            AND (
+AND c.deleted = false
+AND (
                 LOWER(c.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
                 OR LOWER(c.username) LIKE LOWER(CONCAT('%', :keyword, '%'))
                 OR LOWER(c.website) LIKE LOWER(CONCAT('%', :keyword, '%'))
@@ -40,4 +42,8 @@ public interface CredentialRepository
             User user,
             Category category,
             Pageable pageable);
+
+Optional<Credential> findByCredentialIdAndDeletedFalse(Long credentialId);
+List<Credential> findByUserAndDeletedTrue(User user);
+
 }
