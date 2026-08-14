@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<configuration>
+
+    <!-- ============================= -->
+    <!-- Console Logging               -->
+    <!-- ============================= -->
+
+    <appender name="CONSOLE"
+              class="ch.qos.logback.core.ConsoleAppender">
+
+        <encoder>
+            <pattern>
+                %d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n
+            </pattern>
+        </encoder>
+
+    </appender>
+
+
+    <!-- ============================= -->
+    <!-- Rolling File Logging          -->
+    <!-- ============================= -->
+
+    <appender name="FILE"
+              class="ch.qos.logback.core.rolling.RollingFileAppender">
+
+        <!-- Current log file -->
+        <file>logs/securevault.log</file>
+
+        <rollingPolicy
+                class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+
+            <!-- Daily rolling + history -->
+            <fileNamePattern>
+                logs/securevault.%d{yyyy-MM-dd}.%i.log
+            </fileNamePattern>
+
+            <!-- Maximum size of one log file -->
+            <maxFileSize>10MB</maxFileSize>
+
+            <!-- Keep logs for 7 days -->
+            <maxHistory>7</maxHistory>
+
+            <!-- Prevent unlimited total log storage -->
+            <totalSizeCap>100MB</totalSizeCap>
+
+        </rollingPolicy>
+
+        <encoder>
+            <pattern>
+                %d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n
+            </pattern>
+        </encoder>
+
+    </appender>
+
+    <!-- Credential service debug logging -->
+    <logger name="com.securevault.service.impl.CredentialServiceImpl"
+            level="DEBUG"/>
+    <!-- ============================= -->
+    <!-- Root Logger                   -->
+    <!-- ============================= -->
+
+    <root level="INFO">
+
+        <appender-ref ref="CONSOLE"/>
+
+        <appender-ref ref="FILE"/>
+
+    </root>
+
+</configuration>

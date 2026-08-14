@@ -3,9 +3,13 @@ package com.securevault.security;
 import java.util.Base64;
 
 import javax.crypto.Cipher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import javax.crypto.spec.SecretKeySpec;
 
 public class AESUtil {
+    private static final Logger logger =
+            LoggerFactory.getLogger(AESUtil.class);
 
     private static final String SECRET_KEY = "1234567890123456";
 
@@ -22,8 +26,9 @@ public class AESUtil {
             return Base64.getEncoder().encodeToString(encryptedData);
 
         } catch (Exception e) {
-            throw new RuntimeException("Encryption failed");
-        }
+    logger.error("AES encryption failed", e);
+    throw new RuntimeException("Encryption failed");
+}
     }
 
     public static String decrypt(String encryptedData) {
@@ -39,7 +44,8 @@ public class AESUtil {
             return new String(cipher.doFinal(decodedData));
 
         } catch (Exception e) {
-            throw new RuntimeException("Decryption failed");
-        }
+    logger.error("AES decryption failed", e);
+    throw new RuntimeException("Decryption failed");
+}
     }
 }

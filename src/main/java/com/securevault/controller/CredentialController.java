@@ -2,6 +2,10 @@ package com.securevault.controller;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,24 +20,25 @@ import com.securevault.dto.ApiResponse;
 import com.securevault.dto.CredentialRequest;
 import com.securevault.dto.CredentialResponse;
 import com.securevault.entity.Category;
-import com.securevault.service.CredentialService;
 import com.securevault.service.AsyncTaskService;
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
+import com.securevault.service.CredentialService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/vault")
 @RequiredArgsConstructor
 public class CredentialController {
 
+    private static final Logger logger =
+            LoggerFactory.getLogger(CredentialController.class);
+
     private final CredentialService credentialService;
-private final AsyncTaskService asyncTaskService;
+    private final AsyncTaskService asyncTaskService;
 
     @PostMapping
     public ApiResponse<CredentialResponse> saveCredential(
@@ -41,14 +46,19 @@ private final AsyncTaskService asyncTaskService;
 
         CredentialResponse response =
                 credentialService.saveCredential(credentialRequest);
-        System.out.println(
-        "Request thread: " + Thread.currentThread().getName()
-);
-                asyncTaskService.sendEmailNotification();
+
+        logger.info(
+                "Credential creation request handled on thread: {}",
+                Thread.currentThread().getName()
+        );
+
+        asyncTaskService.sendEmailNotification();
+
         asyncTaskService.logActivity(
-        response.getCredentialId(),
-        "CREATE"
-);
+                response.getCredentialId(),
+                "CREATE"
+        );
+
         return new ApiResponse<>(
                 true,
                 "Credential created successfully",
@@ -80,7 +90,6 @@ private final AsyncTaskService asyncTaskService;
             @RequestParam(defaultValue = "asc") String direction,
             Pageable pageable) {
 
-        // Allow only valid Credential fields for sorting
         List<String> allowedSortFields = List.of(
                 "title",
                 "username",
@@ -125,7 +134,10 @@ private final AsyncTaskService asyncTaskService;
             @Valid @RequestBody CredentialRequest credentialRequest) {
 
         CredentialResponse response =
-                credentialService.updateCredential(id, credentialRequest);
+                credentialService.updateCredential(
+                        id,
+                        credentialRequest
+                );
 
         return new ApiResponse<>(
                 true,
@@ -147,32 +159,36 @@ private final AsyncTaskService asyncTaskService;
                 response
         );
     }
-@PutMapping("/{id}/restore")
-public ApiResponse<String> restoreCredential(@PathVariable Long id) {
 
-    credentialService.restoreCredential(id);
+    @PutMapping("/{id}/restore")
+    public ApiResponse<String> restoreCredential(
+            @PathVariable Long id) {
 
-    return new ApiResponse<>(
-            true,
-            "Credential restored successfully",
-            null
-    );
-}
-@GetMapping("/trash")
-public ApiResponse<List<CredentialResponse>> getTrash() {
+        credentialService.restoreCredential(id);
 
-    List<CredentialResponse> response =
-            credentialService.getDeletedCredentials();
+        return new ApiResponse<>(
+                true,
+                "Credential restored successfully",
+                null
+        );
+    }
 
-    return new ApiResponse<>(
-            true,
-            "Trash fetched successfully",
-            response
-    );
-}
+    @GetMapping("/trash")
+    public ApiResponse<List<CredentialResponse>> getTrash() {
+
+        List<CredentialResponse> response =
+                credentialService.getDeletedCredentials();
+
+        return new ApiResponse<>(
+                true,
+                "Trash fetched successfully",
+                response
+        );
+    }
 
     @DeleteMapping("/{id}")
-    public ApiResponse<String> deleteCredential(@PathVariable Long id) {
+    public ApiResponse<String> deleteCredential(
+            @PathVariable Long id) {
 
         credentialService.deleteCredential(id);
 
@@ -184,15 +200,15 @@ public ApiResponse<List<CredentialResponse>> getTrash() {
     }
 
     @DeleteMapping("/{id}/permanent")
-public ApiResponse<String> permanentlyDeleteCredential(
-        @PathVariable Long id) {
+    public ApiResponse<String> permanentlyDeleteCredential(
+            @PathVariable Long id) {
 
-    credentialService.permanentlyDeleteCredential(id);
+        credentialService.permanentlyDeleteCredential(id);
 
-    return new ApiResponse<>(
-            true,
-            "Credential permanently deleted successfully",
-            null
-    );
-}
+        return new ApiResponse<>(
+                true,
+                "Credential permanently deleted successfully",
+                null
+        );
+    }
 }
