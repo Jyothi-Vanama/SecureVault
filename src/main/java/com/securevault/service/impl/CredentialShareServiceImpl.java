@@ -264,21 +264,69 @@ public class CredentialShareServiceImpl
                 .equals(user.getUserId());
     }
 
+// @Override
+// @Transactional(readOnly = true)
+// public boolean canAccessCredential(
+//         Credential credential,
+//         User user) {
+
+//     // Owner can always access their own credential
+//     if (credential.getUser()
+//             .getUserId()
+//             .equals(user.getUserId())) {
+
+//         return true;
+//     }
+
+//     // Otherwise check whether the credential is actively shared
+//     CredentialShare share =
+//             credentialShareRepository
+//                     .findByCredentialCredentialIdAndSharedWithUserAndActiveTrue(
+//                             credential.getCredentialId(),
+//                             user)
+//                     .orElse(null);
+
+//     if (share == null) {
+//         return false;
+//     }
+
+//     // Check share expiration
+//     if (share.getExpiresAt() != null
+//             && share.getExpiresAt()
+//                     .isBefore(LocalDateTime.now())) {
+
+//         return false;
+//     }
+
+//     return true;
+// }
+
+
 @Override
 @Transactional(readOnly = true)
 public boolean canAccessCredential(
         Credential credential,
         User user) {
 
-    // Owner can always access their own credential
-    if (credential.getUser()
-            .getUserId()
-            .equals(user.getUserId())) {
+    Long ownerId = credential.getUser().getUserId();
+    Long currentUserId = user.getUserId();
+
+    logger.info("========== CREDENTIAL ACCESS DEBUG ==========");
+    logger.info("Credential ID: {}", credential.getCredentialId());
+    logger.info("Credential Owner ID: {}", ownerId);
+    logger.info("Current Logged-in User ID: {}", currentUserId);
+    logger.info("Owner Email: {}", credential.getUser().getEmail());
+    logger.info("Current User Email: {}", user.getEmail());
+
+    // Owner can always access
+    if (ownerId.equals(currentUserId)) {
+
+        logger.info("ACCESS GRANTED: User is the owner");
 
         return true;
     }
 
-    // Otherwise check whether the credential is actively shared
+    // Otherwise check whether credential is actively shared
     CredentialShare share =
             credentialShareRepository
                     .findByCredentialCredentialIdAndSharedWithUserAndActiveTrue(
@@ -287,19 +335,25 @@ public boolean canAccessCredential(
                     .orElse(null);
 
     if (share == null) {
+
+        logger.warn("ACCESS DENIED: No active share found");
+
         return false;
     }
 
-    // Check share expiration
     if (share.getExpiresAt() != null
-            && share.getExpiresAt()
-                    .isBefore(LocalDateTime.now())) {
+            && share.getExpiresAt().isBefore(LocalDateTime.now())) {
+
+        logger.warn("ACCESS DENIED: Share has expired");
 
         return false;
     }
+
+    logger.info("ACCESS GRANTED: Credential is shared");
 
     return true;
 }
+
 
     @Override
     @Transactional(readOnly = true)

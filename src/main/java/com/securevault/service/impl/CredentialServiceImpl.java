@@ -26,6 +26,7 @@ import com.securevault.security.AESUtil;
 import com.securevault.service.AuditLogService;
 import com.securevault.service.CredentialService;
 import com.securevault.service.CredentialShareService;
+import com.securevault.service.PasswordService;
 import com.securevault.specification.CredentialSpecification;
 
 import lombok.RequiredArgsConstructor;
@@ -35,6 +36,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.securevault.dto.PasswordStrengthRequest;
+import com.securevault.dto.PasswordStrengthResponse;
+
 
 @Service
 @RequiredArgsConstructor
@@ -47,6 +51,7 @@ public class CredentialServiceImpl implements CredentialService {
     private final PasswordHistoryRepository passwordHistoryRepository;
     private final AuditLogService auditLogService;
     private final CredentialShareService credentialShareService;
+    private final PasswordService passwordService;
 
 
     // =========================================================
@@ -287,9 +292,22 @@ public class CredentialServiceImpl implements CredentialService {
             response.setWebsite(credential.getWebsite());
             response.setUsername(credential.getUsername());
 
-            response.setEncryptedPassword(
-                    AESUtil.decrypt(
-                            credential.getEncryptedPassword()));
+           String decryptedPassword =
+        AESUtil.decrypt(
+                credential.getEncryptedPassword());
+
+response.setEncryptedPassword(decryptedPassword);
+
+PasswordStrengthRequest strengthRequest =
+        new PasswordStrengthRequest();
+
+strengthRequest.setPassword(decryptedPassword);
+
+PasswordStrengthResponse strengthResponse =
+        passwordService.analyzePassword(strengthRequest);
+
+response.setStrength(
+        strengthResponse.getStrength());
 
             response.setNotes(credential.getNotes());
             response.setCategory(credential.getCategory());

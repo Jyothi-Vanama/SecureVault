@@ -16,4 +16,5 @@ public class CredentialResponse {
     private String title;
     private String notes;
     private Category category;
+    private String strength;
 }

@@ -80,7 +80,7 @@ public class PasswordServiceImpl implements PasswordService {
         return response;
     }
 
-    @Override
+ @Override
 public PasswordGeneratorResponse generatePassword(
         PasswordGeneratorRequest request) {
 
@@ -89,36 +89,74 @@ public PasswordGeneratorResponse generatePassword(
     String numbers = "0123456789";
     String symbols = "@$!%*?&";
 
-    String characters = "";
+    SecureRandom random = new SecureRandom();
 
+    List<Character> passwordCharacters = new ArrayList<>();
+    StringBuilder characters = new StringBuilder();
+
+    // Add at least one character from every selected type
     if (request.isUppercase()) {
-        characters += upper;
+        passwordCharacters.add(
+                upper.charAt(random.nextInt(upper.length()))
+        );
+        characters.append(upper);
     }
 
     if (request.isLowercase()) {
-        characters += lower;
+        passwordCharacters.add(
+                lower.charAt(random.nextInt(lower.length()))
+        );
+        characters.append(lower);
     }
 
     if (request.isNumbers()) {
-        characters += numbers;
+        passwordCharacters.add(
+                numbers.charAt(random.nextInt(numbers.length()))
+        );
+        characters.append(numbers);
     }
 
     if (request.isSymbols()) {
-        characters += symbols;
+        passwordCharacters.add(
+                symbols.charAt(random.nextInt(symbols.length()))
+        );
+        characters.append(symbols);
     }
 
-    SecureRandom random = new SecureRandom();
+    // Make sure at least one character type is selected
+    if (characters.length() == 0) {
+        throw new IllegalArgumentException(
+                "At least one character type must be selected."
+        );
+    }
 
-    StringBuilder password = new StringBuilder();
-
-    for (int i = 0; i < request.getLength(); i++) {
+    // Fill the remaining password length randomly
+    while (passwordCharacters.size() < request.getLength()) {
 
         int index = random.nextInt(characters.length());
 
-        password.append(characters.charAt(index));
+        passwordCharacters.add(
+                characters.charAt(index)
+        );
+    }
+
+    // Shuffle the characters so the guaranteed characters
+    // are not always placed at the beginning
+    for (int i = passwordCharacters.size() - 1; i > 0; i--) {
+
+        int j = random.nextInt(i + 1);
+
+        Character temp = passwordCharacters.get(i);
+        passwordCharacters.set(i, passwordCharacters.get(j));
+        passwordCharacters.set(j, temp);
+    }
+
+    StringBuilder password = new StringBuilder();
+
+    for (Character character : passwordCharacters) {
+        password.append(character);
     }
 
     return new PasswordGeneratorResponse(password.toString());
-
 }
 }
